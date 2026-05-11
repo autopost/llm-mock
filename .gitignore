@@ -1,0 +1,26 @@
+# env & secrets
+.env
+
+# virtual environment
+.venv/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# test cache
+.pytest_cache/
+
+# macOS
+.DS_Store
+
+# internal planning docs — not relevant to library users
+CONTEXT.md
+backlog.md
+
+# dev scratch scripts
+try_record.py
+try_replay.py
