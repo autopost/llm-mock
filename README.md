@@ -28,7 +28,10 @@ llm-mock records and replays at the structured request level (model + messages +
 ## Installation
 
 ```bash
-pip install llm-mock
+# PyPI release coming soon — install from source for now:
+git clone https://github.com/autopost/llm-mock.git
+cd llm-mock
+pip install -e .
 ```
 
 **Runtime dependencies:** `httpx`, `respx`, `pydantic`
