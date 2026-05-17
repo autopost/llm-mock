@@ -3,12 +3,13 @@
 Record real LLM responses once, replay them in tests forever — no API key required, no cost, no non-determinism.
 
 ```python
-# Record once against the real API
+# Record once against the real API (run locally with your API key)
 with llm_mock(mode="record", fixture="tests/fixtures/summarize"):
     result = my_pipeline("Summarize this document...")
 
-# Replay in CI — no API calls, deterministic, instant
-with llm_mock(mode="replay", fixture="tests/fixtures/summarize"):
+# Replay in tests — no API key, no cost, deterministic
+@pytest.mark.llm_replay(fixture="summarize")
+def test_summarize():
     result = my_pipeline("Summarize this document...")
     assert "key points" in result
 ```
@@ -81,22 +82,37 @@ This creates `tests/fixtures/summarize.json`. **Commit this file to git.**
 
 ### Step 2 — Replay (in tests, forever)
 
+Use the pytest decorator — no `with` block needed inside the test:
+
 ```python
 # tests/test_pipeline.py
-from llm_mock import llm_mock
+import pytest
 from my_app.pipeline import summarize
 
+@pytest.mark.llm_replay(fixture="summarize")
 def test_summarize():
-    with llm_mock(mode="replay", fixture="tests/fixtures/summarize"):
-        result = summarize("Long article about climate change...")
-        assert "climate" in result
+    result = summarize("Long article about climate change...")
+    assert "climate" in result
 ```
 
 ```bash
 pytest  # no API key needed, runs offline, instant
 ```
 
+The decorator auto-discovers the fixture path relative to the test file — `fixture="summarize"` looks for `tests/fixtures/summarize.json` when the test lives in `tests/`.
+
 llm-mock intercepts the httpx call the Anthropic SDK makes internally and returns the saved response — your test code calls `summarize()` exactly as it would in production.
+
+**Alternative:** use the context manager directly if you need more control:
+
+```python
+from llm_mock import llm_mock
+
+def test_summarize():
+    with llm_mock(mode="replay", fixture="tests/fixtures/summarize"):
+        result = summarize("Long article about climate change...")
+        assert "climate" in result
+```
 
 ### Step 3 — Re-record when things change
 
@@ -189,12 +205,27 @@ with llm_mock(mode="replay", fixture="fixtures/hello"):
 
 The exact same response is returned instantly — no network call made.
 
-### pytest decorator (coming in v0.2)
+### 7. Write a test with the pytest decorator
 
 ```python
-@pytest.mark.llm_replay(fixture="greet")
-def test_greeting():
-    ...
+# tests/test_hello.py
+import anthropic
+import pytest
+
+client = anthropic.Anthropic(api_key="fake-key")
+
+@pytest.mark.llm_replay(fixture="hello")
+def test_hello():
+    message = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=64,
+        messages=[{"role": "user", "content": "Say hello in one sentence."}],
+    )
+    assert message.content[0].text  # replayed from fixtures/hello.json
+```
+
+```bash
+.venv/bin/pytest tests/test_hello.py -v
 ```
 
 ---
@@ -326,6 +357,6 @@ pytest
 
 ## Roadmap
 
-- **v0.2** — pytest plugin (`@pytest.mark.llm_replay`), CLI (`llm-mock list / clear`), `auto` mode, disable via env var
+- **v0.2** — CLI (`llm-mock list / clear`), `auto` mode, disable via env var
 - **v1.1** — streaming support
 - **v2** — shared fixtures for teams, semantic matching, web dashboard

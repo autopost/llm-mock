@@ -26,6 +26,9 @@ dev = [
 [project.scripts]
 llm-mock = "llm_mock.cli:main"
 
+[project.entry-points."pytest11"]
+llm-mock = "llm_mock.pytest_plugin"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["llm_mock*"]
