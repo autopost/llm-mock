@@ -177,7 +177,7 @@ You should see the real response printed and `fixtures/hello.json` created.
 ### 5. Verify the fixture
 
 ```bash
-cat fixtures/hello.json
+llm-mock list tests/fixtures/hello
 ```
 
 ### 6. Replay without an API key
@@ -226,6 +226,43 @@ def test_hello():
 
 ```bash
 .venv/bin/pytest tests/test_hello.py -v
+```
+
+---
+
+## CLI
+
+Inspect and manage fixture files from the terminal.
+
+### `llm-mock list <fixture>`
+
+Show all recorded interactions in a fixture file:
+
+```bash
+$ llm-mock list tests/fixtures/summarize
+
+Fixture : tests/fixtures/summarize.json
+Provider: anthropic
+Interactions: 2
+
+  1. a3f2c1d4e5b6…  claude-sonnet-4-6        2026-04-23T10:00:00
+       "Summarize this document about climate change..."
+  2. b4g3d2e5f6c7…  claude-haiku-4-5-20251001  2026-04-24T11:00:00
+       "What is the capital of France?"
+```
+
+### `llm-mock clear <fixture>`
+
+Delete an entire fixture file:
+
+```bash
+llm-mock clear tests/fixtures/summarize
+```
+
+Delete a single interaction by hash:
+
+```bash
+llm-mock clear tests/fixtures/summarize --hash a3f2c1d4e5b6
 ```
 
 ---
@@ -357,6 +394,6 @@ pytest
 
 ## Roadmap
 
-- **v0.2** — CLI (`llm-mock list / clear`), `auto` mode, disable via env var
+- **v0.2** — `auto` mode, disable via env var (`LLM_MOCK_DISABLED`)
 - **v1.1** — streaming support
 - **v2** — shared fixtures for teams, semantic matching, web dashboard
