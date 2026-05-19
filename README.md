@@ -234,6 +234,12 @@ def test_hello():
 
 Inspect and manage fixture files from the terminal.
 
+> **Note:** activate your virtual environment first so `llm-mock` is on your PATH:
+> ```bash
+> source .venv/bin/activate
+> ```
+> Or run it directly with `.venv/bin/llm-mock <command>`.
+
 ### `llm-mock list <fixture>`
 
 Show all recorded interactions in a fixture file:
