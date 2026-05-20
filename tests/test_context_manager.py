@@ -154,6 +154,48 @@ def test_openai_replay_returns_fixture(tmp_path):
     assert response.json() == FAKE_OPENAI_RESPONSE
 
 
+# --- FEAT-5: edge cases in record mode ---
+
+def test_record_does_not_save_on_4xx(tmp_path):
+    fixture = tmp_path / "anth.json"
+    error_body = {"type": "error", "error": {"type": "authentication_error"}}
+    with patch(
+        "llm_mock.providers.anthropic._forward_request",
+        side_effect=_make_fake_forward(error_body, status=401),
+    ):
+        with llm_mock(mode="record", fixture=str(fixture), provider="anthropic"):
+            response = _post(ANTHROPIC_URL, ANTHROPIC_REQUEST)
+
+    assert response.status_code == 401
+    assert not fixture.exists()
+
+
+def test_record_does_not_save_on_5xx(tmp_path):
+    fixture = tmp_path / "anth.json"
+    with patch(
+        "llm_mock.providers.anthropic._forward_request",
+        side_effect=_make_fake_forward({"error": "server error"}, status=500),
+    ):
+        with llm_mock(mode="record", fixture=str(fixture), provider="anthropic"):
+            response = _post(ANTHROPIC_URL, ANTHROPIC_REQUEST)
+
+    assert response.status_code == 500
+    assert not fixture.exists()
+
+
+def test_record_propagates_network_error(tmp_path):
+    fixture = tmp_path / "anth.json"
+    with patch(
+        "llm_mock.providers.anthropic._forward_request",
+        side_effect=httpx.ConnectError("timeout"),
+    ):
+        with pytest.raises(httpx.ConnectError):
+            with llm_mock(mode="record", fixture=str(fixture), provider="anthropic"):
+                _post(ANTHROPIC_URL, ANTHROPIC_REQUEST)
+
+    assert not fixture.exists()
+
+
 # --- provider="all" ---
 
 def test_all_provider_intercepts_both(tmp_path):

@@ -21,6 +21,8 @@ def _forward_request(request: httpx.Request, body: bytes) -> httpx.Response:
             return httpx.Response(resp.status, content=resp.read())
     except urlreq.HTTPError as e:
         return httpx.Response(e.code, content=e.read())
+    except urlreq.URLError as e:
+        raise httpx.ConnectError(str(e)) from e
 
 
 def _build_route(mock_router: respx.MockRouter, mode: str, fixture_path: str) -> None:
@@ -36,6 +38,10 @@ def _build_route(mock_router: respx.MockRouter, mode: str, fixture_path: str) ->
             return httpx.Response(200, json=interaction.response)
 
         real_response = _forward_request(request, body)
+
+        if real_response.status_code >= 400:
+            return real_response
+
         resp_data = real_response.json()
         fixture_store.save(
             fixture_path,
