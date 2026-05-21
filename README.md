@@ -29,7 +29,12 @@ llm-mock records and replays at the structured request level (model + messages +
 ## Installation
 
 ```bash
-# PyPI release coming soon — install from source for now:
+pip install llm-mock
+```
+
+Or install from source:
+
+```bash
 git clone https://github.com/autopost/llm-mock.git
 cd llm-mock
 pip install -e .
@@ -133,10 +138,7 @@ A complete working example from scratch.
 ### 1. Install
 
 ```bash
-git clone https://github.com/yourname/llm-mock
-cd llm-mock
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
+pip install llm-mock
 ```
 
 ### 2. Save your API key
