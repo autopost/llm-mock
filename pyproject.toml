@@ -5,9 +5,26 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "llm-mock"
 version = "0.1.1"
-description = "Record and replay LLM API calls for deterministic testing"
+description = "pytest plugin to mock and replay OpenAI and Anthropic API calls — record once, replay forever, no API key needed"
 readme = "README.md"
 requires-python = ">=3.10"
+keywords = [
+    "llm", "mock", "pytest", "testing", "openai", "anthropic",
+    "replay", "record", "fixture", "vcr", "cassette", "ai",
+    "claude", "gpt", "deterministic", "offline", "mocking"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Pytest",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Testing :: Mocking",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+]
 dependencies = [
     "httpx>=0.27",
     "respx>=0.21",

@@ -1,6 +1,6 @@
 # llm-mock
 
-Record real LLM responses once, replay them in tests forever — no API key required, no cost, no non-determinism.
+**pytest plugin to mock OpenAI and Anthropic API calls** — record real responses once, replay them in tests forever. No API key needed in CI, no cost per run, no flaky non-determinism.
 
 ```python
 # Record once against the real API (run locally with your API key)
@@ -14,15 +14,18 @@ def test_summarize():
     assert "key points" in result
 ```
 
+Works with the **Anthropic SDK** (`claude-*` models) and the **OpenAI SDK** (`gpt-*` models) out of the box — no changes to your application code required.
+
 ---
 
-## Why
+## Why mock LLM calls in tests?
 
-- **API calls during tests are expensive.** A CI run hitting real LLM APIs can cost dollars per run at scale.
-- **LLM outputs are non-deterministic.** Even at `temperature=0`, responses can vary across model versions.
-- **Your production code stays untouched.** llm-mock intercepts at the HTTP transport layer — no changes to application code required.
+- **Cost.** A CI pipeline hitting real LLM APIs can cost dollars per run at scale.
+- **Flakiness.** LLM outputs are non-deterministic — even `temperature=0` varies across model versions.
+- **Speed.** Replayed fixtures return instantly; no network round-trip.
+- **Offline.** Tests run without credentials in CI, on a plane, in a container.
 
-llm-mock records and replays at the structured request level (model + messages + temperature), stores human-readable JSON fixtures, and integrates natively with pytest.
+llm-mock intercepts at the **HTTP transport layer** (via `httpx`/`respx`) — your production code is never touched. Fixtures are plain JSON files you commit to git, diff in PRs, and refresh on demand.
 
 ---
 
@@ -405,3 +408,9 @@ pytest
 - **v0.2** — `auto` mode, disable via env var (`LLM_MOCK_DISABLED`)
 - **v1.1** — streaming support
 - **v2** — shared fixtures for teams, semantic matching, web dashboard
+
+---
+
+## Related
+
+`pytest mock openai` · `pytest mock anthropic` · `mock LLM calls python` · `record replay LLM` · `vcr cassette openai` · `fake openai response pytest` · `test without API key` · `offline LLM testing` · `deterministic LLM tests`
