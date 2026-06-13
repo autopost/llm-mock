@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import httpx
 import pytest
+import respx
 
 from llm_mock import llm_mock, FixtureNotFoundError
 from llm_mock.fixture_store import Interaction, save
@@ -210,3 +211,79 @@ def test_all_provider_intercepts_both(tmp_path):
 
     data = json.loads(fixture.read_text())
     assert len(data["interactions"]) == 2
+
+
+# --- auto mode ---
+
+def test_auto_replays_when_fixture_exists(tmp_path):
+    fixture = tmp_path / "auto.json"
+    with patch("llm_mock.providers.anthropic._forward_request",
+               side_effect=_make_fake_forward(FAKE_ANTHROPIC_RESPONSE)):
+        with llm_mock(mode="record", fixture=str(fixture), provider="anthropic"):
+            _post(ANTHROPIC_URL, ANTHROPIC_REQUEST)
+
+    with patch("llm_mock.providers.anthropic._forward_request") as mock_fwd:
+        with llm_mock(mode="auto", fixture=str(fixture), provider="anthropic"):
+            response = _post(ANTHROPIC_URL, ANTHROPIC_REQUEST)
+        mock_fwd.assert_not_called()
+
+    assert response.status_code == 200
+    assert response.json() == FAKE_ANTHROPIC_RESPONSE
+
+
+def test_auto_records_when_no_fixture(tmp_path):
+    fixture = tmp_path / "auto.json"
+    with patch("llm_mock.providers.anthropic._forward_request",
+               side_effect=_make_fake_forward(FAKE_ANTHROPIC_RESPONSE)):
+        with llm_mock(mode="auto", fixture=str(fixture), provider="anthropic"):
+            response = _post(ANTHROPIC_URL, ANTHROPIC_REQUEST)
+
+    assert response.status_code == 200
+    assert fixture.exists()
+    data = json.loads(fixture.read_text())
+    assert len(data["interactions"]) == 1
+
+
+def test_auto_records_when_hash_missing(tmp_path):
+    fixture = tmp_path / "auto.json"
+    other_request = {**ANTHROPIC_REQUEST, "messages": [{"role": "user", "content": "Different"}]}
+
+    with patch("llm_mock.providers.anthropic._forward_request",
+               side_effect=_make_fake_forward(FAKE_ANTHROPIC_RESPONSE)):
+        with llm_mock(mode="record", fixture=str(fixture), provider="anthropic"):
+            _post(ANTHROPIC_URL, other_request)
+
+    with patch("llm_mock.providers.anthropic._forward_request",
+               side_effect=_make_fake_forward(FAKE_ANTHROPIC_RESPONSE)):
+        with llm_mock(mode="auto", fixture=str(fixture), provider="anthropic"):
+            _post(ANTHROPIC_URL, ANTHROPIC_REQUEST)
+
+    data = json.loads(fixture.read_text())
+    assert len(data["interactions"]) == 2
+
+
+# --- LLM_MOCK_DISABLED ---
+
+def test_disabled_bypasses_interception(tmp_path, monkeypatch):
+    monkeypatch.setenv("LLM_MOCK_DISABLED", "1")
+    fixture = tmp_path / "never.json"
+
+    with respx.mock() as outer:
+        outer.post(ANTHROPIC_URL).mock(return_value=httpx.Response(200, json=FAKE_ANTHROPIC_RESPONSE))
+        with llm_mock(mode="replay", fixture=str(fixture), provider="anthropic"):
+            response = _post(ANTHROPIC_URL, ANTHROPIC_REQUEST)
+
+    assert response.status_code == 200
+    assert not fixture.exists()
+
+
+def test_disabled_does_not_raise_on_missing_fixture(tmp_path, monkeypatch):
+    monkeypatch.setenv("LLM_MOCK_DISABLED", "1")
+    fixture = tmp_path / "never.json"
+
+    with respx.mock() as outer:
+        outer.post(ANTHROPIC_URL).mock(return_value=httpx.Response(200, json=FAKE_ANTHROPIC_RESPONSE))
+        with llm_mock(mode="replay", fixture=str(fixture), provider="anthropic"):
+            response = _post(ANTHROPIC_URL, ANTHROPIC_REQUEST)
+
+    assert response.status_code == 200

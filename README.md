@@ -301,13 +301,21 @@ Replay mode:
 
 ### `llm_mock(mode, fixture, provider="all")`
 
-Context manager that activates record or replay mode.
+Context manager that activates record, replay, or auto mode.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `mode` | `"record"` \| `"replay"` | Whether to hit the real API and save, or return from fixture |
+| `mode` | `"record"` \| `"replay"` \| `"auto"` | `record` hits the real API and saves; `replay` returns from fixture; `auto` replays if fixture exists, records if not |
 | `fixture` | `str` | Path to the fixture file. `.json` extension added automatically if omitted |
 | `provider` | `"anthropic"` \| `"openai"` \| `"all"` | Which provider(s) to intercept. Default: `"all"` |
+
+**`auto` mode** is the recommended default for most projects — it self-heals when new requests appear without manual mode switches:
+
+```python
+@pytest.mark.llm_replay(fixture="summarize", mode="auto")
+def test_summarize():
+    ...
+```
 
 ```python
 from llm_mock import llm_mock
@@ -315,6 +323,20 @@ from llm_mock import llm_mock
 with llm_mock(mode="replay", fixture="tests/fixtures/my_test", provider="anthropic"):
     ...
 ```
+
+### Environment variables
+
+| Variable | Effect |
+|---|---|
+| `LLM_MOCK_DISABLED=1` | Disables all interception — LLM calls go to the real API as normal |
+
+Useful for refreshing all fixtures in one shot without touching test code:
+
+```bash
+LLM_MOCK_DISABLED=1 ANTHROPIC_API_KEY=sk-... pytest
+```
+
+Or in a weekly CI job that validates against the live model.
 
 ### Exceptions
 
@@ -405,7 +427,7 @@ pytest
 
 ## Roadmap
 
-- **v0.2** — `auto` mode, disable via env var (`LLM_MOCK_DISABLED`)
+- **v0.2** — `auto` mode, `LLM_MOCK_DISABLED` env var ✓
 - **v1.1** — streaming support
 - **v2** — shared fixtures for teams, semantic matching, web dashboard
 

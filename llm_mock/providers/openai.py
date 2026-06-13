@@ -37,6 +37,13 @@ def _build_route(mock_router: respx.MockRouter, mode: str, fixture_path: str) ->
             interaction = fixture_store.load(fixture_path, h)
             return httpx.Response(200, json=interaction.response)
 
+        if mode == "auto":
+            try:
+                interaction = fixture_store.load(fixture_path, h)
+                return httpx.Response(200, json=interaction.response)
+            except fixture_store.FixtureNotFoundError:
+                pass  # fixture missing or hash not recorded yet — fall through to record
+
         real_response = _forward_request(request, body)
 
         if real_response.status_code >= 400:
