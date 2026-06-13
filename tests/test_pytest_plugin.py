@@ -109,6 +109,30 @@ def test_marker_without_fixture_arg_raises(pytester):
     result.assert_outcomes(failed=1)
 
 
+def test_marker_auto_mode_replays_existing_fixture(pytester):
+    fixtures_dir = pytester.path / "fixtures"
+    fixtures_dir.mkdir()
+    _make_fixture(fixtures_dir, "greet")
+
+    pytester.makepyfile(f"""
+        import httpx
+        import pytest
+
+        @pytest.mark.llm_replay(fixture="greet", mode="auto")
+        def test_example():
+            response = httpx.post(
+                "{ANTHROPIC_URL}",
+                json={REQUEST},
+                headers={{"x-api-key": "test"}},
+            )
+            assert response.status_code == 200
+            assert response.json()["content"][0]["text"] == "Hi!"
+    """)
+
+    result = pytester.runpytest("-v")
+    result.assert_outcomes(passed=1)
+
+
 def test_unmarked_test_unaffected(pytester):
     pytester.makepyfile("""
         def test_plain():

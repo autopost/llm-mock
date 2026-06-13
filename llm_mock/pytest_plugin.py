@@ -10,7 +10,7 @@ from llm_mock.context_manager import llm_mock
 def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line(
         "markers",
-        "llm_replay(fixture, provider='all'): replay LLM API calls from a fixture file",
+        "llm_replay(fixture, mode='replay', provider='all'): mock LLM API calls from a fixture file",
     )
 
 
@@ -24,10 +24,11 @@ def pytest_runtest_call(item: pytest.Item):
     if fixture_name is None:
         raise ValueError("@pytest.mark.llm_replay requires a 'fixture' argument")
 
+    mode = marker.kwargs.get("mode", "replay")
     provider = marker.kwargs.get("provider", "all")
     fixture_path = _resolve_fixture_path(fixture_name, item)
 
-    with llm_mock(mode="replay", fixture=str(fixture_path), provider=provider):
+    with llm_mock(mode=mode, fixture=str(fixture_path), provider=provider):
         return (yield)
 
 
