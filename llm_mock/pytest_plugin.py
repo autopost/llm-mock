@@ -7,6 +7,15 @@ import pytest
 from llm_mock.context_manager import llm_mock
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption(
+        "--llm-mock-live",
+        action="store_true",
+        default=False,
+        help="Bypass llm-mock and hit the real LLM API (same as LLM_MOCK_DISABLED=1)",
+    )
+
+
 def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line(
         "markers",
@@ -18,6 +27,9 @@ def pytest_configure(config: pytest.Config) -> None:
 def pytest_runtest_call(item: pytest.Item):
     marker = item.get_closest_marker("llm_replay")
     if marker is None:
+        return (yield)
+
+    if item.config.getoption("--llm-mock-live", default=False):
         return (yield)
 
     fixture_name = marker.kwargs.get("fixture") or (marker.args[0] if marker.args else None)

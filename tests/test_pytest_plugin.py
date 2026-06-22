@@ -133,6 +133,24 @@ def test_marker_auto_mode_replays_existing_fixture(pytester):
     result.assert_outcomes(passed=1)
 
 
+def test_llm_mock_live_flag_bypasses_interception(pytester):
+    pytester.makepyfile(f"""
+        import httpx
+        import pytest
+        import respx
+
+        @pytest.mark.llm_replay(fixture="nonexistent")
+        def test_example():
+            with respx.mock() as m:
+                m.post("{ANTHROPIC_URL}").mock(return_value=httpx.Response(200, json={RESPONSE}))
+                response = httpx.post("{ANTHROPIC_URL}", json={REQUEST}, headers={{"x-api-key": "test"}})
+            assert response.status_code == 200
+    """)
+
+    result = pytester.runpytest("--llm-mock-live", "-v")
+    result.assert_outcomes(passed=1)
+
+
 def test_unmarked_test_unaffected(pytester):
     pytester.makepyfile("""
         def test_plain():
