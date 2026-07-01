@@ -25,13 +25,13 @@ def _forward_request(request: httpx.Request, body: bytes) -> httpx.Response:
         raise httpx.ConnectError(str(e)) from e
 
 
-def _build_route(mock_router: respx.MockRouter, mode: str, fixture_path: str) -> None:
+def _build_route(mock_router: respx.MockRouter, mode: str, fixture_path: str, match_on: tuple | list = matcher.DEFAULT_MATCH_ON) -> None:
     @mock_router.post(f"{OPENAI_BASE_URL}/v1/chat/completions")
     def handle(request: httpx.Request) -> httpx.Response:
         import json
         body = request.read()
         req_data = json.loads(body)
-        h = matcher.make_hash(req_data)
+        h = matcher.make_hash(req_data, match_on)
 
         if mode == "replay":
             interaction = fixture_store.load(fixture_path, h)

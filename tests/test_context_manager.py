@@ -262,6 +262,27 @@ def test_auto_records_when_hash_missing(tmp_path):
     assert len(data["interactions"]) == 2
 
 
+# --- match_on ---
+
+def test_match_on_excludes_temperature(tmp_path):
+    fixture = tmp_path / "anth.json"
+    request_hot = {**ANTHROPIC_REQUEST, "temperature": 0.9}
+
+    with patch("llm_mock.providers.anthropic._forward_request",
+               side_effect=_make_fake_forward(FAKE_ANTHROPIC_RESPONSE)):
+        with llm_mock(mode="record", fixture=str(fixture), provider="anthropic",
+                      match_on=["model", "messages"]):
+            _post(ANTHROPIC_URL, ANTHROPIC_REQUEST)
+
+    # replay with different temperature — should still hit the fixture
+    with llm_mock(mode="replay", fixture=str(fixture), provider="anthropic",
+                  match_on=["model", "messages"]):
+        response = _post(ANTHROPIC_URL, request_hot)
+
+    assert response.status_code == 200
+    assert response.json() == FAKE_ANTHROPIC_RESPONSE
+
+
 # --- LLM_MOCK_DISABLED ---
 
 def test_disabled_bypasses_interception(tmp_path, monkeypatch):
