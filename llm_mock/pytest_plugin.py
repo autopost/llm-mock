@@ -9,7 +9,7 @@ from llm_mock.context_manager import llm_mock
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
-        "--llm-mock-live",
+        "--llm-mock-disabled",
         action="store_true",
         default=False,
         help="Bypass llm-mock and hit the real LLM API (same as LLM_MOCK_DISABLED=1)",
@@ -29,7 +29,7 @@ def pytest_runtest_call(item: pytest.Item):
     if marker is None:
         return (yield)
 
-    if item.config.getoption("--llm-mock-live", default=False):
+    if item.config.getoption("--llm-mock-disabled", default=False):
         return (yield)
 
     fixture_name = marker.kwargs.get("fixture") or (marker.args[0] if marker.args else None)

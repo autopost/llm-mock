@@ -133,7 +133,7 @@ def test_marker_auto_mode_replays_existing_fixture(pytester):
     result.assert_outcomes(passed=1)
 
 
-def test_llm_mock_live_flag_bypasses_interception(pytester):
+def test_llm_mock_disabled_flag_bypasses_interception(pytester):
     pytester.makepyfile(f"""
         import httpx
         import pytest
@@ -147,7 +147,7 @@ def test_llm_mock_live_flag_bypasses_interception(pytester):
             assert response.status_code == 200
     """)
 
-    result = pytester.runpytest("--llm-mock-live", "-v")
+    result = pytester.runpytest("--llm-mock-disabled", "-v")
     result.assert_outcomes(passed=1)
 
 

@@ -329,7 +329,7 @@ with llm_mock(mode="replay", fixture="tests/fixtures/my_test", provider="anthrop
 | Method | Effect |
 |---|---|
 | `LLM_MOCK_DISABLED=1` | Disables all interception — LLM calls go to the real API as normal |
-| `pytest --llm-mock-live` | Same as above, but as a pytest flag — no env var needed |
+| `pytest --llm-mock-disabled` | Same as above, but as a pytest flag — no env var needed |
 
 Useful for refreshing all fixtures in one shot without touching test code:
 
@@ -338,7 +338,7 @@ Useful for refreshing all fixtures in one shot without touching test code:
 LLM_MOCK_DISABLED=1 ANTHROPIC_API_KEY=sk-... pytest
 
 # via pytest flag
-pytest --llm-mock-live
+pytest --llm-mock-disabled
 ```
 
 Or in a weekly CI job that validates against the live model.
