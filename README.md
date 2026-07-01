@@ -299,7 +299,7 @@ Replay mode:
 
 ## API reference
 
-### `llm_mock(mode, fixture, provider="all")`
+### `llm_mock(mode, fixture, provider="all", match_on=...)`
 
 Context manager that activates record, replay, or auto mode.
 
@@ -308,6 +308,7 @@ Context manager that activates record, replay, or auto mode.
 | `mode` | `"record"` \| `"replay"` \| `"auto"` | `record` hits the real API and saves; `replay` returns from fixture; `auto` replays if fixture exists, records if not |
 | `fixture` | `str` | Path to the fixture file. `.json` extension added automatically if omitted |
 | `provider` | `"anthropic"` \| `"openai"` \| `"all"` | Which provider(s) to intercept. Default: `"all"` |
+| `match_on` | `list[str]` | Fields used to match requests to fixtures. Default: `["model", "messages", "temperature"]` |
 
 **`auto` mode** is the recommended default for most projects — it self-heals when new requests appear without manual mode switches:
 
@@ -323,6 +324,24 @@ from llm_mock import llm_mock
 with llm_mock(mode="replay", fixture="tests/fixtures/my_test", provider="anthropic"):
     ...
 ```
+
+#### Configurable match keys
+
+By default requests are matched by `model + messages + temperature`. You can customise this with `match_on`:
+
+```python
+# Ignore temperature — different temperature values hit the same fixture
+with llm_mock(mode="replay", fixture="tests/fixtures/summary",
+              match_on=["model", "messages"]):
+    ...
+
+# Include system prompt in matching — different system prompts get separate fixture entries
+with llm_mock(mode="replay", fixture="tests/fixtures/summary",
+              match_on=["model", "messages", "system"]):
+    ...
+```
+
+Supported fields: `"model"`, `"messages"`, `"temperature"`, `"system"`.
 
 ### Environment variables & CLI flags
 
