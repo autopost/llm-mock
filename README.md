@@ -452,7 +452,8 @@ pytest
 ## Roadmap
 
 - **v0.2** — `auto` mode, `LLM_MOCK_DISABLED` env var ✓
-- **v1.1** — streaming support
+- **v0.3** — `match_on` configurable match keys, `--llm-mock-disabled` pytest flag ✓
+- **v1.1** — streaming support (`stream=True` for Anthropic and OpenAI)
 - **v2** — shared fixtures for teams, semantic matching, web dashboard
 
 ---
