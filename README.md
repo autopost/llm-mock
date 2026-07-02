@@ -247,6 +247,31 @@ Inspect and manage fixture files from the terminal.
 > ```
 > Or run it directly with `.venv/bin/llm-mock <command>`.
 
+### `llm-mock init`
+
+Set up llm-mock in your project. Run once in the project root:
+
+```bash
+llm-mock init
+```
+
+Creates:
+- `tests/fixtures/` — directory for fixture files
+- `record_fixtures.py` — ready-to-run record script
+- `tests/test_example.py` — example test using `@pytest.mark.llm_replay`
+
+Then follow the printed next steps:
+
+```
+Next steps:
+  1. Record fixtures (needs API key, run once):
+       ANTHROPIC_API_KEY=sk-ant-... python record_fixtures.py
+  2. Commit the fixtures:
+       git add tests/fixtures/ && git commit -m 'add llm-mock fixtures'
+  3. Run tests (no API key needed):
+       pytest
+```
+
 ### `llm-mock list <fixture>`
 
 Show all recorded interactions in a fixture file:
@@ -466,7 +491,7 @@ pytest
 ## Roadmap
 
 - **v0.2** — `auto` mode, `LLM_MOCK_DISABLED` env var ✓
-- **v0.3** — `match_on` configurable match keys, `--llm-mock-disabled` pytest flag ✓
+- **v0.3** — `match_on` configurable match keys, `--llm-mock-disabled` pytest flag, `llm-mock init` command ✓
 - **v1.1** — streaming support (`stream=True` for Anthropic and OpenAI)
 - **v2** — shared fixtures for teams, semantic matching, web dashboard
 
