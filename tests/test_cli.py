@@ -113,3 +113,30 @@ def test_clear_hash_not_found_exits(tmp_path):
     with pytest.raises(SystemExit) as exc:
         main()
     assert exc.value.code == 1
+
+
+# --- init ---
+
+def test_init_creates_fixtures_dir_and_files(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    sys.argv = ["llm-mock", "init"]
+    main()
+    assert (tmp_path / "tests" / "fixtures").is_dir()
+    assert (tmp_path / "record_fixtures.py").exists()
+    assert (tmp_path / "tests" / "test_example.py").exists()
+
+
+def test_init_does_not_overwrite_existing_files(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    existing = tmp_path / "record_fixtures.py"
+    existing.write_text("# my custom script")
+    sys.argv = ["llm-mock", "init"]
+    main()
+    assert existing.read_text() == "# my custom script"
+
+
+def test_init_idempotent(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    sys.argv = ["llm-mock", "init"]
+    main()
+    main()  # second run should not raise
