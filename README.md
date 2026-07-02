@@ -1,5 +1,7 @@
 # llm-mock
 
+[![Tests](https://github.com/autopost/llm-mock/actions/workflows/test.yml/badge.svg)](https://github.com/autopost/llm-mock/actions/workflows/test.yml)
+
 **pytest plugin to mock OpenAI and Anthropic API calls** — record real responses once, replay them in tests forever. No API key needed in CI, no cost per run, no flaky non-determinism.
 
 ```python
