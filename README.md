@@ -341,7 +341,19 @@ with llm_mock(mode="replay", fixture="tests/fixtures/summary",
     ...
 ```
 
-Supported fields: `"model"`, `"messages"`, `"temperature"`, `"system"`.
+**Supported fields:**
+
+| Field | Default | Description |
+|---|---|---|
+| `"model"` | included | The model name, e.g. `"claude-sonnet-4-6"`, `"gpt-4o"` |
+| `"messages"` | included | The full messages array — role + content |
+| `"temperature"` | included | Sampling temperature. Remove from `match_on` to make tests temperature-agnostic |
+| `"system"` | excluded | Top-level system prompt. Add to `match_on` when different system prompts should produce separate fixture entries |
+
+**When to change the defaults:**
+
+- **Exclude `temperature`** — your app varies temperature between environments (dev vs prod) but you want a single fixture to cover both
+- **Include `system`** — your app uses system prompts and you need separate fixtures per system prompt (e.g. different personas or instructions)
 
 ### Environment variables & CLI flags
 
