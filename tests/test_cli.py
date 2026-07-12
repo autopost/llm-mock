@@ -17,6 +17,18 @@ INTERACTION_1 = Interaction(
     recorded_at="2026-05-01T10:00:00+00:00",
 )
 
+INTERACTION_STREAM = Interaction(
+    hash="ff00aa112233",
+    request={
+        "model": "claude-sonnet-4-6",
+        "messages": [{"role": "user", "content": "Stream this."}],
+        "stream": True,
+    },
+    streaming=True,
+    stream_events=[{"event": "message_stop", "data": {"type": "message_stop"}}],
+    recorded_at="2026-05-03T12:00:00+00:00",
+)
+
 INTERACTION_2 = Interaction(
     hash="ddeeff445566",
     request={
@@ -47,6 +59,15 @@ def test_list_shows_interactions(tmp_path, capsys):
     assert "claude-sonnet-4-6" in out
     assert "Summarize this document" in out
     assert "Interactions: 2" in out
+
+
+def test_list_shows_streaming_flag(tmp_path, capsys):
+    path = _make_fixture(tmp_path, INTERACTION_1, INTERACTION_STREAM)
+    sys.argv = ["llm-mock", "list", str(path)]
+    main()
+    out = capsys.readouterr().out
+    assert "[streaming]" in out
+    assert out.count("[streaming]") == 1  # only the streaming interaction
 
 
 def test_list_truncates_long_message(tmp_path, capsys):

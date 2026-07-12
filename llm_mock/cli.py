@@ -40,7 +40,8 @@ def cmd_list(args: argparse.Namespace) -> None:
         preview = messages[0].get("content", "") if messages else ""
         if len(preview) > 60:
             preview = preview[:57] + "..."
-        print(f"  {i}. {interaction.hash[:12]}…  {model}  {recorded_at}")
+        stream_flag = "  [streaming]" if interaction.streaming else ""
+        print(f"  {i}. {interaction.hash[:12]}…  {model}  {recorded_at}{stream_flag}")
         print(f"       \"{preview}\"")
 
 
