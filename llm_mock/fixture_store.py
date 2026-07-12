@@ -10,7 +10,9 @@ from pydantic import BaseModel
 class Interaction(BaseModel):
     hash: str
     request: dict
-    response: dict
+    response: dict = {}
+    streaming: bool = False
+    stream_events: list[dict] = []
     recorded_at: str
 
 

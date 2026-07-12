@@ -7,6 +7,7 @@ import respx
 
 from llm_mock import llm_mock, FixtureNotFoundError
 from llm_mock.fixture_store import Interaction, save
+from llm_mock.sse import build_sse, parse_sse
 
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
@@ -46,6 +47,38 @@ def _post(url: str, body: dict) -> httpx.Response:
 def _make_fake_forward(response_body: dict, status: int = 200):
     def fake_forward(request, body):
         return httpx.Response(status, json=response_body)
+    return fake_forward
+
+
+ANTHROPIC_STREAM_REQUEST = {
+    "model": "claude-sonnet-4-6",
+    "messages": [{"role": "user", "content": "Say hi"}],
+    "max_tokens": 10,
+    "stream": True,
+}
+
+OPENAI_STREAM_REQUEST = {
+    "model": "gpt-4o",
+    "messages": [{"role": "user", "content": "Say hi"}],
+    "stream": True,
+}
+
+FAKE_ANTHROPIC_SSE_EVENTS = [
+    {"event": "message_start", "data": {"type": "message_start", "message": {"id": "msg_01"}}},
+    {"event": "content_block_delta", "data": {"type": "content_block_delta", "delta": {"type": "text_delta", "text": "Hi!"}}},
+    {"event": "message_stop", "data": {"type": "message_stop"}},
+]
+
+FAKE_OPENAI_SSE_EVENTS = [
+    {"data": {"id": "chatcmpl-01", "choices": [{"delta": {"content": "Hi!"}, "finish_reason": None}]}},
+    {"data": "[DONE]"},
+]
+
+
+def _make_fake_sse_forward(events: list):
+    def fake_forward(request, body):
+        return httpx.Response(200, content=build_sse(events),
+                              headers={"content-type": "text/event-stream"})
     return fake_forward
 
 
@@ -308,3 +341,78 @@ def test_disabled_does_not_raise_on_missing_fixture(tmp_path, monkeypatch):
             response = _post(ANTHROPIC_URL, ANTHROPIC_REQUEST)
 
     assert response.status_code == 200
+
+
+# --- streaming ---
+
+def test_anthropic_streaming_record_saves_events(tmp_path):
+    fixture = tmp_path / "stream.json"
+    with patch("llm_mock.providers.anthropic._forward_request",
+               side_effect=_make_fake_sse_forward(FAKE_ANTHROPIC_SSE_EVENTS)):
+        with llm_mock(mode="record", fixture=str(fixture), provider="anthropic"):
+            _post(ANTHROPIC_URL, ANTHROPIC_STREAM_REQUEST)
+
+    data = json.loads(fixture.read_text())
+    assert data["interactions"][0]["streaming"] is True
+    assert len(data["interactions"][0]["stream_events"]) == 3
+
+
+def test_anthropic_streaming_replay_returns_sse(tmp_path):
+    fixture = tmp_path / "stream.json"
+    with patch("llm_mock.providers.anthropic._forward_request",
+               side_effect=_make_fake_sse_forward(FAKE_ANTHROPIC_SSE_EVENTS)):
+        with llm_mock(mode="record", fixture=str(fixture), provider="anthropic"):
+            _post(ANTHROPIC_URL, ANTHROPIC_STREAM_REQUEST)
+
+    with patch("llm_mock.providers.anthropic._forward_request") as mock_fwd:
+        with llm_mock(mode="replay", fixture=str(fixture), provider="anthropic"):
+            response = _post(ANTHROPIC_URL, ANTHROPIC_STREAM_REQUEST)
+        mock_fwd.assert_not_called()
+
+    assert response.status_code == 200
+    assert "text/event-stream" in response.headers["content-type"]
+    events = parse_sse(response.content)
+    assert events == FAKE_ANTHROPIC_SSE_EVENTS
+
+
+def test_anthropic_streaming_auto_replays_existing(tmp_path):
+    fixture = tmp_path / "stream.json"
+    with patch("llm_mock.providers.anthropic._forward_request",
+               side_effect=_make_fake_sse_forward(FAKE_ANTHROPIC_SSE_EVENTS)):
+        with llm_mock(mode="record", fixture=str(fixture), provider="anthropic"):
+            _post(ANTHROPIC_URL, ANTHROPIC_STREAM_REQUEST)
+
+    with patch("llm_mock.providers.anthropic._forward_request") as mock_fwd:
+        with llm_mock(mode="auto", fixture=str(fixture), provider="anthropic"):
+            response = _post(ANTHROPIC_URL, ANTHROPIC_STREAM_REQUEST)
+        mock_fwd.assert_not_called()
+
+    assert "text/event-stream" in response.headers["content-type"]
+
+
+def test_openai_streaming_record_saves_events(tmp_path):
+    fixture = tmp_path / "stream.json"
+    with patch("llm_mock.providers.openai._forward_request",
+               side_effect=_make_fake_sse_forward(FAKE_OPENAI_SSE_EVENTS)):
+        with llm_mock(mode="record", fixture=str(fixture), provider="openai"):
+            _post(OPENAI_URL, OPENAI_STREAM_REQUEST)
+
+    data = json.loads(fixture.read_text())
+    assert data["interactions"][0]["streaming"] is True
+    assert len(data["interactions"][0]["stream_events"]) == 2
+
+
+def test_openai_streaming_replay_returns_sse(tmp_path):
+    fixture = tmp_path / "stream.json"
+    with patch("llm_mock.providers.openai._forward_request",
+               side_effect=_make_fake_sse_forward(FAKE_OPENAI_SSE_EVENTS)):
+        with llm_mock(mode="record", fixture=str(fixture), provider="openai"):
+            _post(OPENAI_URL, OPENAI_STREAM_REQUEST)
+
+    with llm_mock(mode="replay", fixture=str(fixture), provider="openai"):
+        response = _post(OPENAI_URL, OPENAI_STREAM_REQUEST)
+
+    assert response.status_code == 200
+    assert "text/event-stream" in response.headers["content-type"]
+    events = parse_sse(response.content)
+    assert events == FAKE_OPENAI_SSE_EVENTS

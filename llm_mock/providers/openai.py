@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import httpx
 import respx
 
-from llm_mock import fixture_store, matcher
+from llm_mock import fixture_store, matcher, sse
 
 OPENAI_BASE_URL = "https://api.openai.com"
 
@@ -33,13 +33,19 @@ def _build_route(mock_router: respx.MockRouter, mode: str, fixture_path: str, ma
         req_data = json.loads(body)
         h = matcher.make_hash(req_data, match_on)
 
+        is_streaming = req_data.get("stream") is True
+
         if mode == "replay":
             interaction = fixture_store.load(fixture_path, h)
+            if interaction.streaming:
+                return sse.make_sse_response(interaction.stream_events)
             return httpx.Response(200, json=interaction.response)
 
         if mode == "auto":
             try:
                 interaction = fixture_store.load(fixture_path, h)
+                if interaction.streaming:
+                    return sse.make_sse_response(interaction.stream_events)
                 return httpx.Response(200, json=interaction.response)
             except fixture_store.FixtureNotFoundError:
                 pass  # fixture missing or hash not recorded yet — fall through to record
@@ -48,6 +54,21 @@ def _build_route(mock_router: respx.MockRouter, mode: str, fixture_path: str, ma
 
         if real_response.status_code >= 400:
             return real_response
+
+        if is_streaming:
+            events = sse.parse_sse(real_response.content)
+            fixture_store.save(
+                fixture_path,
+                provider="openai",
+                interaction=fixture_store.Interaction(
+                    hash=h,
+                    request=req_data,
+                    streaming=True,
+                    stream_events=events,
+                    recorded_at=datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+            return sse.make_sse_response(events)
 
         resp_data = real_response.json()
         fixture_store.save(
