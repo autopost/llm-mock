@@ -322,6 +322,22 @@ Replay mode:
 
 **Request matching** uses SHA256 of `(model, messages, temperature)`. Same request always hits the same fixture entry. Different temperature or different message content → different fixture entry.
 
+**Streaming** (`stream=True`) is fully supported. In record mode the full SSE event stream is captured and saved to the fixture. In replay mode the saved events are reconstructed and returned as a real SSE response — the SDK receives and processes them exactly as if they came from the live API.
+
+```python
+# Record streaming response
+with llm_mock(mode="record", fixture="tests/fixtures/stream_summary"):
+    with client.messages.stream(...) as stream:
+        text = stream.get_final_text()
+
+# Replay — no API key, instant, deterministic
+@pytest.mark.llm_replay(fixture="stream_summary")
+def test_streaming():
+    with client.messages.stream(...) as stream:
+        text = stream.get_final_text()
+    assert "climate" in text
+```
+
 ---
 
 ## API reference
@@ -461,7 +477,7 @@ Multiple interactions (from different requests) are stored in the same file. Re-
 |---|---|---|
 | Anthropic | `api.anthropic.com/v1/messages` | Supported |
 | OpenAI | `api.openai.com/v1/chat/completions` | Supported |
-| Streaming (`stream=True`) | — | v1.1 |
+| Streaming (`stream=True`) | Anthropic + OpenAI | Supported |
 
 ---
 
@@ -479,7 +495,7 @@ Multiple interactions (from different requests) are stored in the same file. Re-
 ## Development
 
 ```bash
-git clone https://github.com/yourname/llm-mock
+git clone https://github.com/autopost/llm-mock
 cd llm-mock
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
@@ -492,7 +508,7 @@ pytest
 
 - **v0.2** — `auto` mode, `LLM_MOCK_DISABLED` env var ✓
 - **v0.3** — `match_on` configurable match keys, `--llm-mock-disabled` pytest flag, `llm-mock init` command ✓
-- **v1.1** — streaming support (`stream=True` for Anthropic and OpenAI)
+- **v1.1** — streaming support (`stream=True` for Anthropic and OpenAI) ✓
 - **v2** — shared fixtures for teams, semantic matching, web dashboard
 
 ---
