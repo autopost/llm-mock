@@ -16,8 +16,11 @@ class Interaction(BaseModel):
     recorded_at: str
 
 
+FIXTURE_VERSION = "2.0"
+
+
 class Fixture(BaseModel):
-    version: str = "1.0"
+    version: str = FIXTURE_VERSION
     provider: str
     interactions: list[Interaction] = []
 
@@ -62,6 +65,7 @@ def save(fixture_path: str | Path, provider: str, interaction: Interaction) -> N
             fixture = Fixture.model_validate_json(p.read_text())
         except Exception as exc:
             raise FixtureParseError(f"Cannot parse existing fixture {p}: {exc}") from exc
+        fixture.version = FIXTURE_VERSION  # upgrade v1.0 fixtures on write
         fixture.interactions = [i for i in fixture.interactions if i.hash != interaction.hash]
         fixture.interactions.append(interaction)
     else:

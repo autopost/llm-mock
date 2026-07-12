@@ -66,3 +66,35 @@ def test_fixture_path_adds_json_extension(tmp_path):
     fixture_no_ext = tmp_path / "myfixture"
     save(fixture_no_ext, "anthropic", INTERACTION)
     assert (tmp_path / "myfixture.json").exists()
+
+
+def test_new_fixture_has_version_2(tmp_path):
+    fixture = tmp_path / "test.json"
+    save(fixture, "anthropic", INTERACTION)
+    data = json.loads(fixture.read_text())
+    assert data["version"] == "2.0"
+
+
+def test_v1_fixture_loads_and_upgrades_on_write(tmp_path):
+    fixture = tmp_path / "old.json"
+    fixture.write_text(json.dumps({
+        "version": "1.0",
+        "provider": "anthropic",
+        "interactions": [{
+            "hash": "abc123",
+            "request": {"model": "claude-sonnet-4-6", "messages": []},
+            "response": {"content": "hello"},
+            "recorded_at": "2026-04-23T00:00:00+00:00",
+        }]
+    }))
+
+    # v1.0 fixture loads fine
+    result = load(fixture, "abc123")
+    assert result.hash == "abc123"
+    assert result.streaming is False
+    assert result.stream_events == []
+
+    # on next write, version is bumped to 2.0
+    save(fixture, "anthropic", INTERACTION)
+    data = json.loads(fixture.read_text())
+    assert data["version"] == "2.0"

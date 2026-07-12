@@ -442,7 +442,7 @@ Fixture files are plain JSON — readable, diffable, committable.
 
 ```json
 {
-  "version": "1.0",
+  "version": "2.0",
   "provider": "anthropic",
   "interactions": [
     {
