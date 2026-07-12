@@ -508,7 +508,7 @@ pytest
 
 - **v0.2** — `auto` mode, `LLM_MOCK_DISABLED` env var ✓
 - **v0.3** — `match_on` configurable match keys, `--llm-mock-disabled` pytest flag, `llm-mock init` command ✓
-- **v1.1** — streaming support (`stream=True` for Anthropic and OpenAI) ✓
+- **v1.0** — streaming support, fixture schema v2.0, `llm-mock list` streaming flag ✓
 - **v2** — shared fixtures for teams, semantic matching, web dashboard
 
 ---
